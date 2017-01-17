@@ -4,9 +4,6 @@ import os
 import csv
 import sys
 
-import re
-
-
 class Extractor:
     def __init__(self, directory, target_directory, users, memory, containers):
         self.containers = containers
