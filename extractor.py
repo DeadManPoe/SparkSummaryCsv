@@ -8,56 +8,62 @@ import re
 
 
 class Extractor:
-    def __init__(self, top_directory, target_directory):
-        self.top_directory = top_directory
+    def __init__(self, directory, target_directory, users, containers, memory):
+        self.containers = containers
+        self.users = users
+        self.memory = memory
+        self.directory = directory
+        self.directoryName = os.path.basename(directory)
+        self.directoryName = self.directoryName[:len(self.directoryName)-4]
         self.target_directory = target_directory
         self.stagesRows = None
         self.stagesTasksList = []
         self.stagesCompletionList = []
 
-    def buildstagesCompletionList(self,file_):
+    def buildstagesCompletionList(self, file_):
         f = open(file_, "r")
         stages = csv.DictReader(f)
         for item in stages:
             self.stagesCompletionList.append({
-                "stageId": item["Stage ID"],
-                "completionTime": item["Completion Time"]
+                "completionTime": int(item["Completion Time"]) - int(item["Submission Time"]),
+                "stageId": item["Stage ID"]
             })
 
     def mergeList(self):
         targetList = []
-        z = OrderedDict({})
+        z = []
         for item in self.stagesCompletionList:
             for sub_item in self.stagesTasksList:
                 if item["stageId"] == sub_item["stageId"]:
-                    z = sub_item.copy()
-                    z["completionTime"] = item["completionTime"]
+                    z.append(self.directoryName)
+                    z.append(sub_item["stageId"])
+                    z.append(str(item["completionTime"]))
+                    z = z + sub_item.values()
+                    del z[3]
+                    z.append(self.users)
+                    z.append(self.memory)
+                    z.append(self.containers)
                     targetList.append(z)
-        return targetList
+                    z = []
+        return sorted(targetList, key=lambda x:x[1])
 
     def produceFile(self, finalList):
-        f = open(self.target_directory + '/summary.csv', 'w')
-        headers = finalList[0].keys()
+        f = open(self.target_directory + '/summary.csv', 'a')
         writer = csv.writer(f, delimiter=',', lineterminator='\n')
-        writer.writerow(headers)
         for item in finalList:
-            writer.writerow(item.values())
+            writer.writerow(item)
 
-    def runSingle(self, file_):
-        tasks_file = file_+"/tasks_1.csv"
-        stages_file = file_+"/stages_1.csv"
+
+    def run(self):
+        tasks_file = self.directory + "/tasks_1.csv"
+        stages_file = self.directory + "/stages_1.csv"
+        print(tasks_file)
         f = open(tasks_file, "r")
         self.stagesRows = self.orderStages(csv.DictReader(f))
         f.close()
         self.buildstagesTasksList()
         self.buildstagesCompletionList(stages_file)
         self.produceFile(self.mergeList())
-
-    def run(self):
-        pattern = re.compile('application_([0-9]+)_([0-9]+)_dir')
-        for f in os.listdir(self.top_directory):
-            if pattern.match(f):
-                self.runSingle(self.top_directory+"/"+f)
 
 
 
@@ -117,11 +123,11 @@ class Extractor:
 
 def main():
     args = sys.argv
-    if len(args) != 3:
+    if len(args) != 5:
         print("Required args: [TOP_DIRECTORY] [TARGET_DIRECTORY]")
         exit(-1)
     else:
-        extractor = Extractor(str(args[1]), str(args[2]))
+        extractor = Extractor(str(args[1]), str(args[2]), str(args[3]), str(args[4]), str(args[5]))
         extractor.run()
 
 
