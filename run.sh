@@ -1,5 +1,19 @@
 #!/bin/bash
 
+function extractDataSize {
+    DATASIZE=$(echo $1 | awk '{split($0,a,"_"); print a[4]}')
+    echo ${DATASIZE}
+}
+
+function extractCores {
+    EXECUTORS=$(echo $1 | awk '{split($0,a,"_"); print a[1]}')
+    CORES_EXEC=$(echo $1 | awk '{split($0,a,"_"); print a[2]}')
+    echo $((${EXECUTORS}*${CORES_EXEC}))
+}
+function extractUsers {
+    USERS=$(echo $1 | awk '{split($0,a,"_"); print a[1]}')
+    echo ${USERS}
+}
 function firstLevelDirTraversal {
     # $1 ->Upper directory $2 -> #Depth $3 -> mode
     if [ $2 -eq 2 ]
@@ -41,7 +55,7 @@ function thirdLevelDirTraversal {
     echo "Run,stageId,CompletionTime,nTask,maxTask,avgTask,SHmax,SHavg,Bmax,Bavg,users,dataSize,nContainers" >> $1/summary.csv
     for item in $(echo $1/* | grep -o ${REGEX})
     do
-        python extractor.py $1/${item} $1 $2 10 10
+        python extractor.py $1/${item} $1 $(extractUsers $2) $(extractDataSize $2) $(extractCores $2)
     done
 
 }
@@ -51,8 +65,7 @@ function InputCheckAndRun {
         echo "Error: the directory inserted does not exist"
         exit -1;
     fi
-
-    firstLevelDirTraversal $1 0 $2
+    firstLevelDirTraversal $1 0 _
 
 }
 
@@ -61,5 +74,5 @@ then
   echo "Error: usage is [ROOT_DIRECTORY] [N_USERS]"
   exit -1;
 fi
-InputCheckAndRun $1 $2
+InputCheckAndRun $1
 

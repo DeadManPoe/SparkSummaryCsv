@@ -8,7 +8,7 @@ import re
 
 
 class Extractor:
-    def __init__(self, directory, target_directory, users, containers, memory):
+    def __init__(self, directory, target_directory, users, memory, containers):
         self.containers = containers
         self.users = users
         self.memory = memory
@@ -57,7 +57,6 @@ class Extractor:
     def run(self):
         tasks_file = self.directory + "/tasks_1.csv"
         stages_file = self.directory + "/stages_1.csv"
-        print(tasks_file)
         f = open(tasks_file, "r")
         self.stagesRows = self.orderStages(csv.DictReader(f))
         f.close()
@@ -123,7 +122,7 @@ class Extractor:
 
 def main():
     args = sys.argv
-    if len(args) != 5:
+    if len(args) != 6:
         print("Required args: [TOP_DIRECTORY] [TARGET_DIRECTORY]")
         exit(-1)
     else:
